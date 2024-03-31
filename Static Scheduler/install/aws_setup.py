@@ -440,13 +440,13 @@ def setup_aws_lambda(aws_region : str, wukong_lambda_config : dict, private_subn
         },
         Layers = [
             # This is an Amazon-created layer containing NumPy and SciPy.
-            "arn:aws:lambda:us-east-1:668099181075:layer:AWSLambda-Python37-SciPy1x:2",
+            "arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python312:6",
             # This contains Dask itself.
-            "arn:aws:lambda:us-east-1:561589293384:layer:DaskLayer2:2",
+            "arn:aws:lambda:us-east-1:205616672683:layer:DaskLayer:1",
             # This contains Dask's dependencies as well as the AWS X-Ray module/library.
-            "arn:aws:lambda:us-east-1:205616672683:layer:DaskDependencies:2",
+            "arn:aws:lambda:us-east-1:205616672683:layer:DaskDependencies:3",
             # This contains DaskML and its dependencies.
-            "arn:aws:lambda:us-east-1:561589293384:layer:dask-ml-layer:9"
+            # "arn:aws:lambda:us-east-1:561589293384:layer:dask-ml-layer:9"
         ]
     )
     print_success("Success!")
