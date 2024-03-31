@@ -125,7 +125,7 @@ def incr(x):
 example_computation = delayed(incr)(5)
 
 # Start the workload. 
-result = example_computation.compute()
+result = example_computation.compute(scheduler = client.get)
 print("Result: %d" % result)  
 ```
 
