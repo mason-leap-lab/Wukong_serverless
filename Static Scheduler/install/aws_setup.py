@@ -6,6 +6,8 @@ import logging
 import yaml
 import time 
 import os 
+import json 
+
 from requests import get
 
 os.system("color")
@@ -71,6 +73,8 @@ def get_arguments():
     parser.add_argument("--skip-vpc", dest = "skip_vpc_creation", action = 'store_true', help = "If passed, then skip the VPC creation step. Note that skipping this step may require additional configuration. See the comments in the provided `wukong_setup_config.yaml` for further information.")
     parser.add_argument("--skip-lambda", dest = "skip_aws_lambda_creation", action = 'store_true', help = "If passed, then skip the creation of the AWS Lambda function(s).")
     
+    parser.add_argument("-o", "--output", type = str, default = "output.json", help = 'Write the IDs of the created resources to this output file. Default: ./output.json')
+    
     parser.add_argument("--no-color", dest = "no_color", action = 'store_true', help = "If passed, then no color will be used when printing messages to the terminal.")
     
     return parser.parse_args()
@@ -101,7 +105,7 @@ def create_wukong_vpc(aws_region : str, user_ip: str, wukong_vpc_config : dict):
         dict {
             "VpcId": The VPC ID of the newly-created VPC.
             "SecurityGroupId": The ID of the security group created for Wukong resources.
-            "PrivateSubnetIds": The ID's of the newly-created private subnets (used for AWS Lambda functions).
+            "PrivateSubnetIds": The IDs of the newly-created private subnets (used for AWS Lambda functions).
         }
     """
     if AWS_PROFILE_NAME is not None:
@@ -679,9 +683,13 @@ if __name__ == "__main__":
     
     # Step 1: Create the VPC
     if not command_line_args.skip_vpc_creation:
-        results = create_wukong_vpc(aws_region, user_public_ip, wukong_vpc_config)
-        private_subnet_ids = results['PrivateSubnetIds']
-        security_group_id = results['SecurityGroupId']
+        vpc_results = create_wukong_vpc(aws_region, user_public_ip, wukong_vpc_config)
+        private_subnet_ids = vpc_results['PrivateSubnetIds']
+        security_group_id = vpc_results['SecurityGroupId']
+        
+        with open(command_line_args.output, 'w') as output_file:
+            print("Writing AWS resource IDs to output file \"%s\": %s" % (command_line_args.output, str(vpc_results)))
+            json.dump(vpc_results, output_file) 
     else:
         print("Skipping the VPC-creation step.")
         # If we skip the creation of the VPC, then we need to obtain the private_subnet_ids
