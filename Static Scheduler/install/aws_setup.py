@@ -429,7 +429,7 @@ def setup_aws_lambda(aws_region : str, wukong_lambda_config : dict, private_subn
     lambda_client.create_function(
         Code = {"ZipFile": open("./wukong_aws_lambda_code.zip", "rb").read()},
         FunctionName = executor_function_name,
-        Runtime = 'python3.7',
+        Runtime = 'python3.12',
         Role = role_arn,
         Handler = 'function.lambda_handler',
         MemorySize = function_memory_mb,
