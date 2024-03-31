@@ -688,8 +688,12 @@ if __name__ == "__main__":
         private_subnet_ids = vpc_results['PrivateSubnetIds']
         security_group_id = vpc_results['security_group_id']
         
-        with open(command_line_args.output, 'w') as output_file:
-            print("Writing AWS resource IDs to output file \"%s\": %s" % (command_line_args.output, str(vpc_results)))
+        output_file_path:str = command_line_args.output
+        if output_file_path is None or output_file_path == "":
+            output_file_path = "output_wukong_resources.json"
+        
+        with open(command_line_args.output_file_path, 'w') as output_file:
+            print("Writing AWS resource IDs to output file \"%s\": %s" % (output_file_path, str(vpc_results)))
             json.dump(vpc_results, output_file) 
     else:
         print("Skipping the VPC-creation step.")
