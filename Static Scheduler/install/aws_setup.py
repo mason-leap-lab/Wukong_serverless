@@ -74,6 +74,7 @@ def get_arguments():
     parser.add_argument("--skip-lambda", dest = "skip_aws_lambda_creation", action = 'store_true', help = "If passed, then skip the creation of the AWS Lambda function(s).")
     
     parser.add_argument("-o", "--output", type = str, default = "output.json", help = 'Write the IDs of the created resources to this output file. Default: ./output.json')
+    parser.add_argument("-i", "--input-file", dest = "input_file", type = str, default = None, help = "Pass the output file of a previous execution of this setup script so that the generated resource IDs can easily be fed to the script (rather than having to update the .yaml configuration file manually). If this passed, then the values in the input file will override any values in the .yaml configuration file.")
     
     parser.add_argument("--no-color", dest = "no_color", action = 'store_true', help = "If passed, then no color will be used when printing messages to the terminal.")
     
@@ -103,9 +104,9 @@ def create_wukong_vpc(aws_region : str, user_ip: str, wukong_vpc_config : dict):
     Returns:
     --------
         dict {
-            "VpcId": The VPC ID of the newly-created VPC.
-            "SecurityGroupId": The ID of the security group created for Wukong resources.
-            "PrivateSubnetIds": The IDs of the newly-created private subnets (used for AWS Lambda functions).
+            "vpc_id": The VPC ID of the newly-created VPC.
+            "security_group_id": The ID of the security group created for Wukong resources.
+            "private_subnet_ids": The IDs of the newly-created private subnets (used for AWS Lambda functions).
         }
     """
     if AWS_PROFILE_NAME is not None:
@@ -315,9 +316,9 @@ def create_wukong_vpc(aws_region : str, user_ip: str, wukong_vpc_config : dict):
     print_success("==========================")
 
     return {
-        "VpcId": vpc.id,
-        "SecurityGroupId": security_group.id,
-        "PrivateSubnetIds": [private_subnet.id for private_subnet in private_subnets]
+        "vpc_id": vpc.id,
+        "security_group_id": security_group.id,
+        "private_subnet_ids": [private_subnet.id for private_subnet in private_subnets]
     }
 
 def setup_aws_lambda(aws_region : str, wukong_lambda_config : dict, private_subnet_ids : list, security_group_id : str):
@@ -685,28 +686,53 @@ if __name__ == "__main__":
     if not command_line_args.skip_vpc_creation:
         vpc_results = create_wukong_vpc(aws_region, user_public_ip, wukong_vpc_config)
         private_subnet_ids = vpc_results['PrivateSubnetIds']
-        security_group_id = vpc_results['SecurityGroupId']
+        security_group_id = vpc_results['security_group_id']
         
         with open(command_line_args.output, 'w') as output_file:
             print("Writing AWS resource IDs to output file \"%s\": %s" % (command_line_args.output, str(vpc_results)))
             json.dump(vpc_results, output_file) 
     else:
         print("Skipping the VPC-creation step.")
-        # If we skip the creation of the VPC, then we need to obtain the private_subnet_ids
-        # and security_group_id from the configuration file or from AWS automatically.
-        if "security_group_id" not in wukong_vpc_config or wukong_vpc_config["security_group_id"] == "":
-            security_group_id = retrieve_security_group_id(wukong_vpc_config = wukong_vpc_config)            
-        else:
-            security_group_id = wukong_vpc_config["security_group_id"]
         
-        # If the private subnet IDs were not explicitly specified in the configuration file,
-        # then we will attempt to retrieve them from AWS by examining the route tables within the VPC.
-        # Specifically, we will look for route tables routing a subnet to a NAT Gateway, as these are
-        # the private subnets. Public subnets will have a route to an Internet Gateway.
-        if "private_subnet_ids" not in wukong_vpc_config or len(wukong_vpc_config["private_subnet_ids"]) == 0:
-            private_subnet_ids = retrieve_private_subnet_ids(wukong_vpc_config = wukong_vpc_config)
+        if command_line_args.input_file is not None: 
+            with open(command_line_args.input_file) as input_file:
+                aws_resources:dict = json.load(input_file)
+                
+                print("Loaded the following AWS resource IDs: %s" % str(aws_resources))
+                
+                security_group_id = aws_resources.get("security_group_id", None)
+                if security_group_id is None:
+                    print_error("Failed to retreive security group ID from input file \"%s\"" % command_line_args.input_file)
+                else:
+                    print_success("Read security group ID from input file \"%s\": \"%s\"" % (command_line_args.input_file, security_group_id))
+                
+                private_subnet_ids = aws_resources.get("private_subnet_ids", None)
+                if private_subnet_ids is None:
+                    print_error("Failed to retreive private subnet IDs from input file \"%s\"" % command_line_args.input_file)
+                else:
+                    print_success("Read private subnet IDs from input file \"%s\": \"%s\"" % (command_line_args.input_file, private_subnet_ids))
+                
+                vpc_id = aws_resources.get("vpc_id", None)
+                if vpc_id is None:
+                    print_error("Failed to retreive VPC ID from input file \"%s\"" % command_line_args.input_file)
+                else:
+                    print_success("Read VPC ID from input file \"%s\": \"%s\"" % (command_line_args.input_file, vpc_id))
         else:
-            private_subnet_ids = wukong_vpc_config["private_subnet_ids"] 
+            # If we skip the creation of the VPC, then we need to obtain the private_subnet_ids
+            # and security_group_id from the configuration file or from AWS automatically.
+            if "security_group_id" not in wukong_vpc_config or wukong_vpc_config["security_group_id"] == "":
+                security_group_id = retrieve_security_group_id(wukong_vpc_config = wukong_vpc_config)            
+            else:
+                security_group_id = wukong_vpc_config["security_group_id"]
+            
+            # If the private subnet IDs were not explicitly specified in the configuration file,
+            # then we will attempt to retrieve them from AWS by examining the route tables within the VPC.
+            # Specifically, we will look for route tables routing a subnet to a NAT Gateway, as these are
+            # the private subnets. Public subnets will have a route to an Internet Gateway.
+            if "private_subnet_ids" not in wukong_vpc_config or len(wukong_vpc_config["private_subnet_ids"]) == 0:
+                private_subnet_ids = retrieve_private_subnet_ids(wukong_vpc_config = wukong_vpc_config)
+            else:
+                private_subnet_ids = wukong_vpc_config["private_subnet_ids"] 
 
     # Step 2: Create AWS Lambda functions.
     if not command_line_args.skip_aws_lambda_creation:
