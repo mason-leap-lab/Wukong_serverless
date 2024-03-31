@@ -1575,7 +1575,7 @@ class Scheduler(ServerNode):
                                                            use_invoker_lambdas_threshold = self.use_invoker_lambdas_threshold,
                                                            force_use_invoker_lambdas = self.force_use_invoker_lambdas,
                                                            aws_access_key_id = self.aws_access_key_id,
-                                                           aws_secret_access_key = self.aws_secret_access_key
+                                                           aws_secret_access_key = self.aws_secret_access_key,
                                                            aws_session_token = self.aws_session_token)
         self.batched_lambda_invoker.start(self.lambda_client, scheduler_address = self.address)        
         # Write the address to Elasticache so the Lambda function can access it without being told explicitly.
