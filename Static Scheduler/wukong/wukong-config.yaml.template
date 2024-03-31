@@ -5,6 +5,9 @@ credentials:
   # Specifies the secret key associated with the access key. This is essentially the "password" for the access key.
   aws_secret_access_key:
 
+  # Used for temporary AWS credentials.
+  aws_session_token: 
+
 # Configure the AWS Lambda resources used by Wukong.
 aws_lambda:
   # If this is set to <true>, then the Static Scheduler will use the AWS API to retrieve the names of the AWS Lambda functions
