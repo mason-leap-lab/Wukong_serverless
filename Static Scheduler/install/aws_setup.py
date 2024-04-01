@@ -685,8 +685,6 @@ if __name__ == "__main__":
     # Step 1: Create the VPC
     if not command_line_args.skip_vpc_creation:
         vpc_results = create_wukong_vpc(aws_region, user_public_ip, wukong_vpc_config)
-        private_subnet_ids = vpc_results['PrivateSubnetIds']
-        security_group_id = vpc_results['security_group_id']
         
         output_file_path:str = command_line_args.output
         if output_file_path is None or output_file_path == "":
@@ -695,6 +693,9 @@ if __name__ == "__main__":
         with open(command_line_args.output_file_path, 'w') as output_file:
             print("Writing AWS resource IDs to output file \"%s\": %s" % (output_file_path, str(vpc_results)))
             json.dump(vpc_results, output_file) 
+            
+        private_subnet_ids = vpc_results['private_subnet_ids']
+        security_group_id = vpc_results['security_group_id']
     else:
         print("Skipping the VPC-creation step.")
         
