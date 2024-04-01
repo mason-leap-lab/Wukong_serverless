@@ -51,7 +51,16 @@ Finally, to test your installation, you may run:
 ``` sh
 python3.12 simple-test-app.py
 ```
-from the `Static Scheduler` directory.
+from the `Static Scheduler` directory. 
+
+If your installation is working, then you should see, among other things, the following in the program's output:
+```
+...
+[CLIENT] Obtained value for key incr-<task id> from Redis.
+[CLIENT] Returning {'status': 'OK', 'data': {'incr-<task id>': 6}} to the user...
+Result: 6
+...
+```
 
 ## Code Overview/Explanation 
 
