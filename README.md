@@ -30,6 +30,8 @@ A majority of the required AWS infrastructure can be created using the provided 
 
 In addition, there is documentation in the `setup/` directory for additional/supplementary instructions concerning the creation of the AWS infrastructure for Wukong.
 
+### Verifying Your Installation
+
 There is a sample Redis configuration file available at `Static Scheduler/install/redis.conf`.
 
 Similarly, there is a simple test application available at `Static Scheduler/simple-test-app.py`. You can use these to test your installation.
