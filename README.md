@@ -45,7 +45,7 @@ You'll also need to start Redis on your machine. In another terminal window, exe
 ``` sh
 redis-server <path/to/redis/config/file>
 ```
-You can use the provided sample Redis configuration file (`Static Scheduler/simple-test-app.py`).
+You can use the provided sample Redis configuration file (`Static Scheduler/install/redis.conf`).
 
 Finally, to test your installation, you may run:
 ``` sh
