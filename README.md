@@ -147,7 +147,7 @@ local_cluster = LocalCluster(host='<private IPv4 of Static Scheduler VM>:8786',
                   use_local_proxy = True, 
                   # Path to `proxy.py` file.
                   local_proxy_path = "/home/ec2-user/Wukong/KV Store Proxy/proxy.py",
-                  redis_endpoints = [("127.0.0.1", 6379)],
+                  redis_endpoints = [("<private IPv4 of Static Scheduler VM>", 6379)],
                   use_fargate = False) 
 client = Client(local_cluster)
 
@@ -175,7 +175,7 @@ local_cluster = LocalCluster(host='<private IPv4 of Static Scheduler VM>:8786',
                   use_local_proxy = True, 
                   # Path to `proxy.py` file.
                   local_proxy_path = "/home/ec2-user/Wukong/KV Store Proxy/proxy.py",
-                  redis_endpoints = [("127.0.0.1", 6379)],
+                  redis_endpoints = [("<private IPv4 of Static Scheduler VM>", 6379)],
                   use_fargate = False) 
 client = Client(local_cluster)
 
@@ -223,7 +223,7 @@ local_cluster = LocalCluster(host='<private IPv4 of Static Scheduler VM>:8786',
                   use_local_proxy = True, 
                   # Path to `proxy.py` file.
                   local_proxy_path = "/home/ec2-user/Wukong/KV Store Proxy/proxy.py",
-                  redis_endpoints = [("127.0.0.1", 6379)],
+                  redis_endpoints = [("<private IPv4 of Static Scheduler VM>", 6379)],
                   use_fargate = False) 
 client = Client(local_cluster)
 
@@ -246,7 +246,7 @@ local_cluster = LocalCluster(host='<private IPv4 of Static Scheduler VM>:8786',
                   use_local_proxy = True, 
                   # Path to `proxy.py` file.
                   local_proxy_path = "/home/ec2-user/Wukong/KV Store Proxy/proxy.py",
-                  redis_endpoints = [("127.0.0.1", 6379)],
+                  redis_endpoints = [("<private IPv4 of Static Scheduler VM>", 6379)],
                   use_fargate = False) 
 client = Client(local_cluster)
 
@@ -269,7 +269,7 @@ local_cluster = LocalCluster(host='<private IPv4 of Static Scheduler VM>:8786',
                   use_local_proxy = True, 
                   # Path to `proxy.py` file.
                   local_proxy_path = "/home/ec2-user/Wukong/KV Store Proxy/proxy.py",
-                  redis_endpoints = [("127.0.0.1", 6379)],
+                  redis_endpoints = [("<private IPv4 of Static Scheduler VM>", 6379)],
                   use_fargate = False) 
 client = Client(local_cluster)
 
@@ -292,7 +292,7 @@ local_cluster = LocalCluster(host='<private IPv4 of Static Scheduler VM>:8786',
                   use_local_proxy = True, 
                   # Path to `proxy.py` file.
                   local_proxy_path = "/home/ec2-user/Wukong/KV Store Proxy/proxy.py",
-                  redis_endpoints = [("127.0.0.1", 6379)],
+                  redis_endpoints = [("<private IPv4 of Static Scheduler VM>", 6379)],
                   use_fargate = False) 
 client = Client(local_cluster)
 
@@ -321,7 +321,7 @@ local_cluster = LocalCluster(host='<private IPv4 of Static Scheduler VM>:8786',
                   use_local_proxy = True, 
                   # Path to `proxy.py` file.
                   local_proxy_path = "/home/ec2-user/Wukong/KV Store Proxy/proxy.py",
-                  redis_endpoints = [("127.0.0.1", 6379)],
+                  redis_endpoints = [("<private IPv4 of Static Scheduler VM>", 6379)],
                   use_fargate = False) 
 client = Client(local_cluster)
 
