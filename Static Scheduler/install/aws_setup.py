@@ -622,8 +622,6 @@ if __name__ == "__main__":
     
     aws_region = wukong_setup_config["aws_region"]
     user_public_ip = wukong_setup_config["user_public_ip"]
-    aws_access_key_id:str = wukong_setup_config.get("aws_access_key_id", None)
-    aws_secret_access_key:str = wukong_setup_config.get("aws_secret_access_key", None)
     
     print("AWS region: \"%s\"" % aws_region)
     print("AWS Profile Name: \"%s\"" % AWS_PROFILE_NAME)
