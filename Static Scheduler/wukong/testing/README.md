@@ -10,11 +10,9 @@ The top-level arguments for the evaluation driver are shown below.
 
 ``` sh
 python3 -m wukong.testing [-h] [--output-directory OUTPUT_DIRECTORY] [--num-trials NUM_TRIALS] 
-                          [--plot-dag] [--num-invokers NUM_INVOKERS] [--batch-size BATCH_SIZE] 
-                          [--plot-gantt] [--no-metrics] [--num-warmup-trials NUM_WARMUP_TRIALS] 
-                          [--gantt-output-path GANTT_OUTPUT_PATH] 
+                          [--num-invokers NUM_INVOKERS] [--no-metrics] [--num-warmup-trials NUM_WARMUP_TRIALS] 
                           [--wukong-config-file WUKONG_CONFIG_FILE] 
-                          [--faas-hostname FAAS_HOSTNAME] [--faas-port FAAS_PORT] 
+                          [--scheduler-hostname SCHEDULER_HOSTNAME] [--proxy-hostname PROXY_HOSTNAME] 
                           [--task-metrics-output-file TASK_METRICS_OUTPUT_FILE] 
                           [--lambda-metrics-output-file LAMBDA_METRICS_OUTPUT_FILE] 
                           [--task-metrics- TASK_METRICS_]
@@ -28,23 +26,16 @@ python3 -m wukong.testing [-h] [--output-directory OUTPUT_DIRECTORY] [--num-tria
                     If None is specified, then an output directory will be generated automatically using the current date/time.
 --num-trials NUM_TRIALS
                     Number of repeated trials.
---plot-dag            If true, then we will generate a visualization of the experiment's DAG and write it to the experiment's output directory. 
-                    If no output directory is set, then this option is ignored.
 --num-invokers NUM_INVOKERS
                     Number of invoker processes to use in Wukong's static scheduler.
---batch-size BATCH_SIZE
-                    How many static schedules to store at-once in the KV store.
---plot-gantt          Plot a Gantt chart of the test's execution. Does nothing if `--no-metrics` is passed (as metrics are required for a Gantt chart to be created).
 --no-metrics          If passed, then do not collect any task-level or serverless-function-level metrics from Wukong.
 --num-warmup-trials NUM_WARMUP_TRIALS
---gantt-output-path GANTT_OUTPUT_PATH
-                    Output file name/path for the Gantt chart. Does nothing unless `-g` or `--gantt` is also passed.
 --wukong-config-file WUKONG_CONFIG_FILE
                     Path to the Wukong configuration file.
---faas-hostname FAAS_HOSTNAME
-                    Hostname to pass to the FaaS client(s).
---faas-port FAAS_PORT
-                    Port to pass to the FaaS client(s).
+--scheduler-hostname SCHEDULER_HOSTNAME
+                    Hostname of the static scheduler.
+--proxy-hostname PROXY_HOSTNAME
+                    Hostname of the KV store proxy.
 --task-metrics-output-file TASK_METRICS_OUTPUT_FILE
                     Output file path for task-level metrics. 
                     The file extension should be omitted, as this file path is used for both the pickle file and the CSV file.
