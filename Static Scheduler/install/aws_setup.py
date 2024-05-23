@@ -6,6 +6,8 @@ import logging
 import yaml
 import time 
 import os 
+import json 
+
 from requests import get
 
 os.system("color")
@@ -66,10 +68,12 @@ def get_arguments():
     parser = argparse.ArgumentParser()
     
     parser.add_argument("-c", "--config", dest = 'config_file_path', type = str, default = None, help = "The path to the configuration file. If nothing is passed, then the user will be explicitly prompted for the configuration path once this script begins executing.")
-    parser.add_argument("-p", "--aws-profile", dest = 'aws_profile', default = None, type = str, help = "The AWS credentials profile to use when creating the resources. If nothing is specified, then this script will ultimately use the default AWS credentials profile.")
-    
+
     parser.add_argument("--skip-vpc", dest = "skip_vpc_creation", action = 'store_true', help = "If passed, then skip the VPC creation step. Note that skipping this step may require additional configuration. See the comments in the provided `wukong_setup_config.yaml` for further information.")
     parser.add_argument("--skip-lambda", dest = "skip_aws_lambda_creation", action = 'store_true', help = "If passed, then skip the creation of the AWS Lambda function(s).")
+    
+    parser.add_argument("-o", "--output", type = str, default = "output.json", help = 'Write the IDs of the created resources to this output file. Default: ./output.json')
+    parser.add_argument("-i", "--input-file", dest = "input_file", type = str, default = None, help = "Pass the output file of a previous execution of this setup script so that the generated resource IDs can easily be fed to the script (rather than having to update the .yaml configuration file manually). If this passed, then the values in the input file will override any values in the .yaml configuration file.")
     
     parser.add_argument("--no-color", dest = "no_color", action = 'store_true', help = "If passed, then no color will be used when printing messages to the terminal.")
     
@@ -98,9 +102,9 @@ def create_wukong_vpc(aws_region : str, user_ip: str, wukong_vpc_config : dict):
     Returns:
     --------
         dict {
-            "VpcId": The VPC ID of the newly-created VPC.
-            "SecurityGroupId": The ID of the security group created for Wukong resources.
-            "PrivateSubnetIds": The ID's of the newly-created private subnets (used for AWS Lambda functions).
+            "vpc_id": The VPC ID of the newly-created VPC.
+            "security_group_id": The ID of the security group created for Wukong resources.
+            "private_subnet_ids": The IDs of the newly-created private subnets (used for AWS Lambda functions).
         }
     """
     if AWS_PROFILE_NAME is not None:
@@ -310,9 +314,9 @@ def create_wukong_vpc(aws_region : str, user_ip: str, wukong_vpc_config : dict):
     print_success("==========================")
 
     return {
-        "VpcId": vpc.id,
-        "SecurityGroupId": security_group.id,
-        "PrivateSubnetIds": [private_subnet.id for private_subnet in private_subnets]
+        "vpc_id": vpc.id,
+        "security_group_id": security_group.id,
+        "private_subnet_ids": [private_subnet.id for private_subnet in private_subnets]
     }
 
 def setup_aws_lambda(aws_region : str, wukong_lambda_config : dict, private_subnet_ids : list, security_group_id : str):
@@ -428,7 +432,7 @@ def setup_aws_lambda(aws_region : str, wukong_lambda_config : dict, private_subn
     lambda_client.create_function(
         Code = {"ZipFile": open("./wukong_aws_lambda_code.zip", "rb").read()},
         FunctionName = executor_function_name,
-        Runtime = 'python3.9',
+        Runtime = 'python3.12',
         Role = role_arn,
         Handler = 'function.lambda_handler',
         MemorySize = function_memory_mb,
@@ -439,66 +443,16 @@ def setup_aws_lambda(aws_region : str, wukong_lambda_config : dict, private_subn
         },
         Layers = [
             # This is an Amazon-created layer containing NumPy and SciPy.
-            "arn:aws:lambda:us-east-1:668099181075:layer:AWSLambda-Python37-SciPy1x:2",
+            "arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python312:6",
             # This contains Dask itself.
-            "arn:aws:lambda:us-east-1:561589293384:layer:DaskLayer2:2",
+            "arn:aws:lambda:us-east-1:205616672683:layer:DaskLayer:1",
             # This contains Dask's dependencies as well as the AWS X-Ray module/library.
-            "arn:aws:lambda:us-east-1:205616672683:layer:DaskDependencies:2",
+            "arn:aws:lambda:us-east-1:205616672683:layer:DaskDependencies:5",
             # This contains DaskML and its dependencies.
-            "arn:aws:lambda:us-east-1:561589293384:layer:dask-ml-layer:9"
+            # "arn:aws:lambda:us-east-1:561589293384:layer:dask-ml-layer:9"
         ]
     )
     print_success("Success!")
-
-
-# def setup_aws_fargate(aws_region : str, wukong_ecs_config : dict):
-#     cluster_name = wukong_ecs_config["cluster_name"]
-
-#     assert(len(cluster_name) >= 1 and len(cluster_name) <= 255)
-
-#     ecs_client = boto3.client('ecs', region_name = aws_region)
-
-#     print("First, creating the ECS Fargate cluster...")
-
-#     ecs_client.create_cluster(clusterName = cluster_name, capacityProviders = ["FARGATE", "FARGATE_SPOT"])
-
-#     print("Successfully created the ECS Fargate cluster.")
-#     print("Next, registering a task definition to use as the Fargate Redis nodes...")
-
-#     ecs_client.register_task_definition(
-#         family = 'Wukong',
-#         executionRoleArn = 'arn:aws:iam::833201972695:role/ecsTaskExecutionRole',
-#         networkMode = 'awsvpc',
-#         containerDefinitions = [
-#             {
-#                 "logConfiguration": {
-#                     "logDriver": "awslogs",
-#                     "options": {
-#                     "awslogs-group": "/ecs/WukongRedisNode",
-#                     "awslogs-region": "us-east-1",
-#                     "awslogs-stream-prefix": "ecs"
-#                     }
-#                 },
-#                 "portMappings": [
-#                     {
-#                     "hostPort": 6379,
-#                     "protocol": "tcp",
-#                     "containerPort": 6379
-#                     }
-#                 ],
-#                 "cpu": 0,
-#                 "environment": [],
-#                 "mountPoints": [],
-#                 "memoryReservation": 30000,
-#                 "volumesFrom": [],
-#                 "image": "redis",
-#                 "essential": True,
-#                 "name": "Redis"
-#             }
-#         ]
-#     )
-
-#     print("Successfully registered the task definition!")
 
 def get_ec2_client():
     global EC2_CLIENT 
@@ -684,31 +638,65 @@ if __name__ == "__main__":
     # Step 1: Create the VPC
     if not command_line_args.skip_vpc_creation:
         try:
-            results = create_wukong_vpc(aws_region, user_public_ip, wukong_vpc_config)
+            vpc_results = create_wukong_vpc(aws_region, user_public_ip, wukong_vpc_config)
         except botocore.exceptions.NoCredentialsError as ex:
             print_error("The AWS Python library is unable to locate your AWS credentials.")
             print_error("Please try passing the AWS credentials profile to use via the '--aws-profile' command-line argument for this script.")
             print_error("If that doesn't work, then it's possible your system's clock is out-of-sync/incorrect.")
             exit(1)
-        private_subnet_ids = results['PrivateSubnetIds']
-        security_group_id = results['SecurityGroupId']
+        
+        output_file_path:str = command_line_args.output
+        if output_file_path is None or output_file_path == "":
+            output_file_path = "output_wukong_resources.json"
+        
+        with open(command_line_args.output_file_path, 'w') as output_file:
+            print("Writing AWS resource IDs to output file \"%s\": %s" % (output_file_path, str(vpc_results)))
+            json.dump(vpc_results, output_file) 
+            
+        private_subnet_ids = vpc_results['private_subnet_ids']
+        security_group_id = vpc_results['security_group_id']
     else:
         print("Skipping the VPC-creation step.")
-        # If we skip the creation of the VPC, then we need to obtain the private_subnet_ids
-        # and security_group_id from the configuration file or from AWS automatically.
-        if "security_group_id" not in wukong_vpc_config or wukong_vpc_config["security_group_id"] == "":
-            security_group_id = retrieve_security_group_id(wukong_vpc_config = wukong_vpc_config)            
-        else:
-            security_group_id = wukong_vpc_config["security_group_id"]
         
-        # If the private subnet IDs were not explicitly specified in the configuration file,
-        # then we will attempt to retrieve them from AWS by examining the route tables within the VPC.
-        # Specifically, we will look for route tables routing a subnet to a NAT Gateway, as these are
-        # the private subnets. Public subnets will have a route to an Internet Gateway.
-        if "private_subnet_ids" not in wukong_vpc_config or len(wukong_vpc_config["private_subnet_ids"]) == 0:
-            private_subnet_ids = retrieve_private_subnet_ids(wukong_vpc_config = wukong_vpc_config)
+        if command_line_args.input_file is not None: 
+            with open(command_line_args.input_file) as input_file:
+                aws_resources:dict = json.load(input_file)
+                
+                print("Loaded the following AWS resource IDs: %s" % str(aws_resources))
+                
+                security_group_id = aws_resources.get("security_group_id", None)
+                if security_group_id is None:
+                    print_error("Failed to retreive security group ID from input file \"%s\"" % command_line_args.input_file)
+                else:
+                    print_success("Read security group ID from input file \"%s\": \"%s\"" % (command_line_args.input_file, security_group_id))
+                
+                private_subnet_ids = aws_resources.get("private_subnet_ids", None)
+                if private_subnet_ids is None:
+                    print_error("Failed to retreive private subnet IDs from input file \"%s\"" % command_line_args.input_file)
+                else:
+                    print_success("Read private subnet IDs from input file \"%s\": \"%s\"" % (command_line_args.input_file, private_subnet_ids))
+                
+                vpc_id = aws_resources.get("vpc_id", None)
+                if vpc_id is None:
+                    print_error("Failed to retreive VPC ID from input file \"%s\"" % command_line_args.input_file)
+                else:
+                    print_success("Read VPC ID from input file \"%s\": \"%s\"" % (command_line_args.input_file, vpc_id))
         else:
-            private_subnet_ids = wukong_vpc_config["private_subnet_ids"] 
+            # If we skip the creation of the VPC, then we need to obtain the private_subnet_ids
+            # and security_group_id from the configuration file or from AWS automatically.
+            if "security_group_id" not in wukong_vpc_config or wukong_vpc_config["security_group_id"] == "":
+                security_group_id = retrieve_security_group_id(wukong_vpc_config = wukong_vpc_config)            
+            else:
+                security_group_id = wukong_vpc_config["security_group_id"]
+            
+            # If the private subnet IDs were not explicitly specified in the configuration file,
+            # then we will attempt to retrieve them from AWS by examining the route tables within the VPC.
+            # Specifically, we will look for route tables routing a subnet to a NAT Gateway, as these are
+            # the private subnets. Public subnets will have a route to an Internet Gateway.
+            if "private_subnet_ids" not in wukong_vpc_config or len(wukong_vpc_config["private_subnet_ids"]) == 0:
+                private_subnet_ids = retrieve_private_subnet_ids(wukong_vpc_config = wukong_vpc_config)
+            else:
+                private_subnet_ids = wukong_vpc_config["private_subnet_ids"] 
 
     # Step 2: Create AWS Lambda functions.
     if not command_line_args.skip_aws_lambda_creation:

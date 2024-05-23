@@ -24,9 +24,43 @@ This branch contains the source code of Wukong corresponding to the SoCC 2020 pu
 
 ## Installation 
 
+**Required Python version**: Python3.12
+
 A majority of the required AWS infrastructure can be created using the provided `aws_setup.py` script in `Wukong/Static Scheduler/install/` directory. Please be sure to read through the `wukong_setup_config.yaml` configuration file located in the same directory prior to running the script. In particular, your public IP address should be added to the configuration file if you'd like SSH to be enabled from your machine to VMs created in the Wukong VPC. 
 
 In addition, there is documentation in the `setup/` directory for additional/supplementary instructions concerning the creation of the AWS infrastructure for Wukong.
+
+### Verifying Your Installation
+
+There is a sample Redis configuration file available at `Static Scheduler/install/redis.conf`.
+
+Similarly, there is a simple test application available at `Static Scheduler/simple-test-app.py`. You can use these to test your installation.
+
+Start the proxy by navigating to the `KV Store Proxy` directory and executing the command:
+``` sh
+python3.12 proxy.py --redis 127.0.0.1
+```
+
+You'll also need to start Redis on your machine. In another terminal window, execute the command:
+``` sh
+redis-server <path/to/redis/config/file>
+```
+You can use the provided sample Redis configuration file (`Static Scheduler/install/redis.conf`).
+
+Finally, to test your installation, you may run:
+``` sh
+python3.12 simple-test-app.py
+```
+from the `Static Scheduler` directory. 
+
+If your installation is working, then you should see, among other things, the following in the program's output:
+```
+...
+[CLIENT] Obtained value for key incr-<task id> from Redis.
+[CLIENT] Returning {'status': 'OK', 'data': {'incr-<task id>': 6}} to the user...
+Result: 6
+...
+```
 
 ## Code Overview/Explanation 
 
@@ -38,7 +72,7 @@ Generally speaking, a user submits a job by calling the `.compute()` function on
 
 When the `.compute()` function is called, the `update_graph()` function is called within the static Scheduler, specifically in **scheduler.py**. This function is responsible for adding computations to the Scheduler's internal graph. It's triggered whenever a Client calls `.submit()`, `.map()`, `.get()`, or `.compute()`. The depth-first search (DFS) method is defined with the `update_graph` function, and the DFS also occurs during the `update_graph` function's execution. 
 
-Once the DFS has completed, the Scheduler will serialize all of the generated paths and store them in the KV Store (Redis). Next, the Scheduler will begin the computation by submitting the leaf tasks to the `BatchedLambdaInvoker` object (which is defined in **batched_lambda_invoker.py**. The "Leaf Task Invoker" processes are defined within the `BatchedLambdaInvoker` class as the `invoker_polling_process` function. Additionally, the `_background_send` function is running asynchronously on an interval (using [Tornado](https://www.tornadoweb.org/en/stable/)). This function takes whatever tasks have been submitted by the Scheduler and divdes them up among itself and the Leaf Task Invoker processes, which then invoke the leaf tasks. 
+Once the DFS has completed, the Scheduler will serialize all of the generated paths and store them in the KV Store (Redis). Next, the Scheduler will begin the computation by submitting the leaf tasks to the `BatchedLambdaInvoker` object (which is defined in **batched_lambda_invoker.py**). The "Leaf Task Invoker" processes are defined within the `BatchedLambdaInvoker` class as the `invoker_polling_process` function. Additionally, the `_background_send` function is running asynchronously on an interval (using [Tornado](https://www.tornadoweb.org/en/stable/)). This function takes whatever tasks have been submitted by the Scheduler and divdes them up among itself and the Leaf Task Invoker processes, which then invoke the leaf tasks. 
 
 The Scheduler listens for results from Lambda using a "Subscriber Process", which is defined by the `poll_redis_process` function. This process is created in the Scheduler's `start` function. (All of this is defined in **scheduler.py**.) The Scheduler is also executing the `consume_redis_queue()` function asynchronously (i.e., on the [Tornado IOLoop](https://www.tornadoweb.org/en/stable/ioloop.html)). This function processes whatever messages were received by the aforementioned "Subscriber Process(es)". Whenever a message is processed, it is passed to the `result_from_lambda()` function, which begins the process of recording the fact that a "final result" is available. 
 
@@ -113,7 +147,7 @@ local_cluster = LocalCluster(host='<private IPv4 of Static Scheduler VM>:8786',
                   use_local_proxy = True, 
                   # Path to `proxy.py` file.
                   local_proxy_path = "/home/ec2-user/Wukong/KV Store Proxy/proxy.py",
-                  redis_endpoints = [("127.0.0.1", 6379)],
+                  redis_endpoints = [("<private IPv4 of Static Scheduler VM>", 6379)],
                   use_fargate = False) 
 client = Client(local_cluster)
 
@@ -125,7 +159,7 @@ def incr(x):
 example_computation = delayed(incr)(5)
 
 # Start the workload. 
-result = example_computation.compute()
+result = example_computation.compute(scheduler = client.get)
 print("Result: %d" % result)  
 ```
 
@@ -141,7 +175,7 @@ local_cluster = LocalCluster(host='<private IPv4 of Static Scheduler VM>:8786',
                   use_local_proxy = True, 
                   # Path to `proxy.py` file.
                   local_proxy_path = "/home/ec2-user/Wukong/KV Store Proxy/proxy.py",
-                  redis_endpoints = [("127.0.0.1", 6379)],
+                  redis_endpoints = [("<private IPv4 of Static Scheduler VM>", 6379)],
                   use_fargate = False) 
 client = Client(local_cluster)
 
@@ -189,7 +223,7 @@ local_cluster = LocalCluster(host='<private IPv4 of Static Scheduler VM>:8786',
                   use_local_proxy = True, 
                   # Path to `proxy.py` file.
                   local_proxy_path = "/home/ec2-user/Wukong/KV Store Proxy/proxy.py",
-                  redis_endpoints = [("127.0.0.1", 6379)],
+                  redis_endpoints = [("<private IPv4 of Static Scheduler VM>", 6379)],
                   use_fargate = False) 
 client = Client(local_cluster)
 
@@ -212,7 +246,7 @@ local_cluster = LocalCluster(host='<private IPv4 of Static Scheduler VM>:8786',
                   use_local_proxy = True, 
                   # Path to `proxy.py` file.
                   local_proxy_path = "/home/ec2-user/Wukong/KV Store Proxy/proxy.py",
-                  redis_endpoints = [("127.0.0.1", 6379)],
+                  redis_endpoints = [("<private IPv4 of Static Scheduler VM>", 6379)],
                   use_fargate = False) 
 client = Client(local_cluster)
 
@@ -235,7 +269,7 @@ local_cluster = LocalCluster(host='<private IPv4 of Static Scheduler VM>:8786',
                   use_local_proxy = True, 
                   # Path to `proxy.py` file.
                   local_proxy_path = "/home/ec2-user/Wukong/KV Store Proxy/proxy.py",
-                  redis_endpoints = [("127.0.0.1", 6379)],
+                  redis_endpoints = [("<private IPv4 of Static Scheduler VM>", 6379)],
                   use_fargate = False) 
 client = Client(local_cluster)
 
@@ -258,7 +292,7 @@ local_cluster = LocalCluster(host='<private IPv4 of Static Scheduler VM>:8786',
                   use_local_proxy = True, 
                   # Path to `proxy.py` file.
                   local_proxy_path = "/home/ec2-user/Wukong/KV Store Proxy/proxy.py",
-                  redis_endpoints = [("127.0.0.1", 6379)],
+                  redis_endpoints = [("<private IPv4 of Static Scheduler VM>", 6379)],
                   use_fargate = False) 
 client = Client(local_cluster)
 
@@ -287,7 +321,7 @@ local_cluster = LocalCluster(host='<private IPv4 of Static Scheduler VM>:8786',
                   use_local_proxy = True, 
                   # Path to `proxy.py` file.
                   local_proxy_path = "/home/ec2-user/Wukong/KV Store Proxy/proxy.py",
-                  redis_endpoints = [("127.0.0.1", 6379)],
+                  redis_endpoints = [("<private IPv4 of Static Scheduler VM>", 6379)],
                   use_fargate = False) 
 client = Client(local_cluster)
 

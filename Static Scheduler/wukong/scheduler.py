@@ -1333,11 +1333,15 @@ class Scheduler(ServerNode):
             
             # Specifies the secret key associated with the access key. This is essentially the "password" for the access key.
             self.aws_secret_access_key = self.wukong_config["credentials"]["aws_secret_access_key"]
+            
+            self.aws_session_token = self.wukong_config["credentials"]["aws_session_token"]
 
         self.aws_region = aws_region
-        self.lambda_client = boto3.client('lambda', region_name=self.aws_region, aws_access_key_id = self.aws_access_key_id, aws_secret_access_key = self.aws_secret_access_key)
-        self.ecs_client = boto3.client('ecs', region_name = self.aws_region, aws_access_key_id = self.aws_access_key_id, aws_secret_access_key = self.aws_secret_access_key)
-        self.ec2_client = boto3.client('ec2', region_name = self.aws_region, aws_access_key_id = self.aws_access_key_id, aws_secret_access_key = self.aws_secret_access_key)
+        
+        self.lambda_client = boto3.client('lambda', region_name=self.aws_region, aws_access_key_id = self.aws_access_key_id, aws_secret_access_key = self.aws_secret_access_key, aws_session_token = self.aws_session_token)
+        self.ecs_client = boto3.client('ecs', region_name = self.aws_region, aws_access_key_id = self.aws_access_key_id, aws_secret_access_key = self.aws_secret_access_key, aws_session_token = self.aws_session_token)
+        self.ec2_client = boto3.client('ec2', region_name = self.aws_region, aws_access_key_id = self.aws_access_key_id, aws_secret_access_key = self.aws_secret_access_key, aws_session_token = self.aws_session_token)
+    
         self.ecs_cluster_name = ecs_cluster_name
         self.ecs_task_definition = ecs_task_definition
         self.ecs_network_configuration = ecs_network_configuration
@@ -1571,7 +1575,8 @@ class Scheduler(ServerNode):
                                                            use_invoker_lambdas_threshold = self.use_invoker_lambdas_threshold,
                                                            force_use_invoker_lambdas = self.force_use_invoker_lambdas,
                                                            aws_access_key_id = self.aws_access_key_id,
-                                                           aws_secret_access_key = self.aws_secret_access_key)
+                                                           aws_secret_access_key = self.aws_secret_access_key,
+                                                           aws_session_token = self.aws_session_token)
         self.batched_lambda_invoker.start(self.lambda_client, scheduler_address = self.address)        
         # Write the address to Elasticache so the Lambda function can access it without being told explicitly.
         address_key = "scheduler-address"

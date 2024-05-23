@@ -1,5 +1,4 @@
-#import json
-import ujson
+import json # TODO: Get ujson working again...
 import cloudpickle
 import datetime
 import base64 
@@ -449,7 +448,7 @@ def task_executor(event, context, previous_results = dict(), task_execution_brea
       deserialization_start = time.time()
       
       # Deserialize the Path.
-      payload = ujson.loads(path_serialized.decode())
+      payload = json.loads(path_serialized.decode())
       
       # Record de-serialization time.
       deserialization_stop = time.time()
@@ -521,7 +520,7 @@ def task_executor(event, context, previous_results = dict(), task_execution_brea
 
             logger.debug("Invoking {} new Lambdas...".format(num_invoke))
             
-            payload_serialized = ujson.dumps(payload)
+            payload_serialized = json.dumps(payload)
 
             # Invoke the next layer of Lambdas.
             for i in range(0, num_invoke):
@@ -548,7 +547,7 @@ def task_executor(event, context, previous_results = dict(), task_execution_brea
 
          try:
             rc = redis.Redis(host = proxy_address, port = 6380, db = 0)
-            rc.lpush("scale-metrics", ujson.dumps(metrics))
+            rc.lpush("scale-metrics", json.dumps(metrics))
          except Exception:
             pass
 
@@ -682,7 +681,7 @@ def publish_dcp_message(channel, payload, serialized = True, max_tries = 8, base
    payload_serialized = payload 
 
    if not serialized:
-      payload_serialized = ujson.dumps(payload)
+      payload_serialized = json.dumps(payload)
    
    num_tries = 1
    
@@ -818,7 +817,7 @@ def get_data_from_redis(task_to_fargate_mapping,
             read_start = time.time()
             fargate_dict_serialized = dcp_redis.get(key + FARGATE_DATA_SUFFIX)
             read_stop = time.time()
-            fargate_dict = ujson.loads(fargate_dict_serialized)
+            fargate_dict = json.loads(fargate_dict_serialized)
             deser_stop = time.time()
 
             read_dur = read_stop - read_start 
@@ -1813,7 +1812,7 @@ def process_path(nodes_map_serialized,
             logger.error("Result['exception']: " + str(result["exception"]))
             return {
                'statusCode': 400,
-               'body': ujson.dumps(result["exception"])
+               'body': json.dumps(result["exception"])
             }   
          elif result[OP_KEY] == EXECUTED_TASK_KEY:
             logger.debug("[EXECUTION] Result of task {} computed in {} seconds.".format(task_key, result[EXECUTION_TIME_KEY]))
@@ -1898,7 +1897,7 @@ def process_path(nodes_map_serialized,
                path_encoded = get_path_from_redis(path_key = path_key, task_execution_breakdown = current_task_execution_breakdown, lambda_execution_breakdown = lambda_execution_breakdown)
                
                deserialization_start = time.time()
-               path_payload = ujson.loads(path_encoded.decode())
+               path_payload = json.loads(path_encoded.decode())
                deserialization_end = time.time()
 
                lambda_execution_breakdown.deserialization_time = (deserialization_end - deserialization_start)
@@ -1960,7 +1959,7 @@ def process_path(nodes_map_serialized,
                   _path = get_path_from_redis(path_key = path_key, task_execution_breakdown = current_task_execution_breakdown, lambda_execution_breakdown = lambda_execution_breakdown)
                   
                   deserialization_start = time.time()
-                  become_path = ujson.loads(_path.decode())
+                  become_path = json.loads(_path.decode())
                   deserialization_end = time.time()
                   lambda_execution_breakdown.deserialization_time = (deserialization_end - deserialization_start)                
          
@@ -2099,7 +2098,7 @@ def process_path(nodes_map_serialized,
                'time_sent': time.time()
             }
             serialization_start = time.time()
-            payload_serialized = ujson.dumps(payload)
+            payload_serialized = json.dumps(payload)
             serialization_end = time.time()
 
             lambda_execution_breakdown.serialization_time = (serialization_end - serialization_start)
@@ -2147,7 +2146,7 @@ def process_path(nodes_map_serialized,
       #xray_recorder.end_subsegment()
    return {
       'statusCode': 202,
-      'body': ujson.dumps("Success")  
+      'body': json.dumps("Success")  
    }
     
 @xray_recorder.capture("process-out-edges")
@@ -2497,7 +2496,7 @@ def process_out_edges(out_edges,
       logger.debug("[INVOCATION] - Invoking downstream task {} [sid-{} uid-{}].".format(node_that_can_execute.task_key, node_that_can_execute.scheduler_id, node_that_can_execute.update_graph_id))
       
       serialization_start = time.time()
-      payload_serialized = ujson.dumps(payload)
+      payload_serialized = json.dumps(payload)
       serialization_end = time.time()
 
       lambda_execution_breakdown.serialization_time = (serialization_end - serialization_start)
@@ -2581,7 +2580,7 @@ def process_small(current_path_node,
       # Some X-Ray diagnostics.
       subsegment = xray_recorder.begin_subsegment("store-redis-proxy")
       serialization_start = time.time()
-      payload_for_proxy = ujson.dumps({OP_KEY: "set", 
+      payload_for_proxy = json.dumps({OP_KEY: "set", 
                                        TASK_KEY: current_path_node.task_key, 
                                        FARGATE_PUBLIC_IP_KEY: current_path_node.fargate_node[FARGATE_PUBLIC_IP_KEY],
                                        #FARGATE_PRIVATE_IP_KEY: current_path_node.fargate_node[FARGATE_PRIVATE_IP_KEY],
@@ -2694,7 +2693,7 @@ def process_small(current_path_node,
       }
 
       serialization_start = time.time()
-      payload_serialized = ujson.dumps(payload)
+      payload_serialized = json.dumps(payload)
       serialization_end = time.time()
 
       lambda_execution_breakdown.serialization_time = (serialization_end - serialization_start)
@@ -2973,7 +2972,7 @@ def process_big(current_path_node,
             }
 
             serialization_start = time.time()
-            payload_serialized = ujson.dumps(payload)
+            payload_serialized = json.dumps(payload)
             serialization_end = time.time()
 
             lambda_execution_breakdown.serialization_time = (serialization_end - serialization_start)
@@ -3044,7 +3043,7 @@ def process_big(current_path_node,
    }
 
    serialization_start = time.time()
-   payload_serialized = ujson.dumps(payload)
+   payload_serialized = json.dumps(payload)
    serialization_end = time.time()
 
    lambda_execution_breakdown.serialization_time = (serialization_end - serialization_start)
@@ -3138,7 +3137,7 @@ def process_big(current_path_node,
          lambda_execution_breakdown.add_event(write_event)
 
          serialization_start = time.time()
-         payload_serialized = ujson.dumps(payload)
+         payload_serialized = json.dumps(payload)
          serialization_end = time.time()
 
          lambda_execution_breakdown.redis_write_time += write_duration
@@ -3377,7 +3376,7 @@ def process_task(task_definition,
          'time_sent': time.time()
       }
 
-      payload_serialized = ujson.dumps(payload)
+      payload_serialized = json.dumps(payload)
 
       publish_start = time.time()
 
@@ -3427,7 +3426,7 @@ def process_task(task_definition,
       }
 
       serialization_start = time.time()
-      payload_serialized = ujson.dumps(payload)
+      payload_serialized = json.dumps(payload)
       serialization_end = time.time()
 
       lambda_execution_breakdown.serialization_time = (serialization_end - serialization_start)
@@ -3571,7 +3570,7 @@ def process_enqueued_tasks(previous_results, tasks_to_fargate_nodes, nodes_to_pr
                OP_KEY: TASK_ERRED_KEY,
                'statusCode': 400,
                'key': ready_task.task_key,
-               'body': ujson.dumps(result["exception"])
+               'body': json.dumps(result["exception"])
             }  
          elif result[OP_KEY] == EXECUTED_TASK_KEY:
             logger.debug("[EXECUTION] Result of task {} computed in {} seconds.".format(task_key, result[EXECUTION_TIME_KEY]))

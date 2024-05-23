@@ -57,25 +57,25 @@ class BatchedLambdaInvoker(object):
     # RedisMultipleVMsExecutor
     # WukongExecutor
     def __init__(
-        self, 
-        interval, 
-        use_multiple_invokers = True, 
-        executor_function_name="WukongExecutor", 
-        invoker_function_name="WukongInvoker", 
-        num_invokers = 16,
-        redis_channel_names = None, 
-        debug_print = False, 
-        chunk_size = 5, 
-        loop=None, 
-        serializers=None, 
-        redis_address = None, 
-        minimum_tasks_for_multiple_invokers = 8, 
-        aws_region = 'us-east-1', 
-        force_use_invoker_lambdas = False,
-        aws_access_key_id = None,
-        aws_secret_access_key = None,
-        use_invoker_lambdas_threshold = 10000):
-        # XXX is the loop arg useful?
+            self, 
+            interval, 
+            use_multiple_invokers = True, 
+            executor_function_name="WukongExecutor", 
+            invoker_function_name="WukongInvoker", 
+            num_invokers = 16,
+            redis_channel_names = None, 
+            debug_print = False, 
+            chunk_size = 5, 
+            loop=None, 
+            serializers=None, 
+            redis_address = None, 
+            minimum_tasks_for_multiple_invokers = 8, 
+            aws_region = 'us-east-1', 
+            force_use_invoker_lambdas = False,
+            aws_access_key_id = None,
+            aws_secret_access_key = None,
+            aws_session_token = None,
+            use_invoker_lambdas_threshold = 10000):
         self.loop = loop or IOLoop.current()
         self.interval = parse_timedelta(interval, default="ms")
         self.waker = locks.Event()
@@ -112,6 +112,7 @@ class BatchedLambdaInvoker(object):
         self.serializers = serializers
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
+        self.aws_session_token = aws_session_token
         #self.ntp_client = ntplib.NTPClient()
 
     def start(self, lambda_client, scheduler_address):
@@ -127,7 +128,7 @@ class BatchedLambdaInvoker(object):
             #(self, conn, chunk_size, scheduler_address, redis_channel_names)
             receiving_conn, sending_conn = Pipe()
             
-            invoker = Process(target = self.invoker_polling_process, args = (i, receiving_conn, self.scheduler_address, self.redis_channel_names, self.aws_region, self.redis_address, self.aws_access_key_id, self.aws_secret_access_key))
+            invoker = Process(target = self.invoker_polling_process, args = (i, receiving_conn, self.scheduler_address, self.redis_channel_names, self.aws_region, self.redis_address, self.aws_access_key_id, self.aws_secret_access_key, self.aws_session_token))
             invoker.daemon = True 
             self.lambda_pipes.append(sending_conn)
             self.lambda_invokers.append(invoker)
@@ -319,14 +320,15 @@ class BatchedLambdaInvoker(object):
         for conn in self.lambda_pipes:
             conn.close()        
 
-    def invoker_polling_process(self, ID, conn, scheduler_address, redis_channel_names, aws_region, redis_address, aws_access_key_id, aws_secret_access_key):
+    def invoker_polling_process(self, ID, conn, scheduler_address, redis_channel_names, aws_region, redis_address, aws_access_key_id, aws_secret_access_key, aws_session_token):
         """ This function runs as a separate process, invoking Lambda functions in parallel.
             
             It continually polls the given Connection object, checking for new payloads. If
             there are no messages in the Pipe, then the process sleeps. The sleep time increases 
             for consecutive empty Pipes."""
         print("[ {} ] - Lambda Invoker Process {} - INFO: Lambda Invoker Process began executing...".format(datetime.datetime.utcnow(), ID))
-        lambda_client = boto3.client('lambda', region_name=aws_region, aws_access_key_id = aws_access_key_id, aws_secret_access_key = aws_secret_access_key)
+        
+        lambda_client = boto3.client('lambda', region_name=aws_region, aws_access_key_id = aws_access_key_id, aws_secret_access_key = aws_secret_access_key, aws_session_token = aws_session_token)
         current_redis_channel_index = 0
         expected_messages = None                      # This is how many messages we are expecting to get.
         base_sleep_interval = 0.005                   # The starting sleep interval.
