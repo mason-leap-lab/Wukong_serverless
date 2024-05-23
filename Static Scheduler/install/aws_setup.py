@@ -456,56 +456,6 @@ def setup_aws_lambda(aws_region : str, wukong_lambda_config : dict, private_subn
     )
     print_success("Success!")
 
-
-# def setup_aws_fargate(aws_region : str, wukong_ecs_config : dict):
-#     cluster_name = wukong_ecs_config["cluster_name"]
-
-#     assert(len(cluster_name) >= 1 and len(cluster_name) <= 255)
-
-#     ecs_client = boto3.client('ecs', region_name = aws_region)
-
-#     print("First, creating the ECS Fargate cluster...")
-
-#     ecs_client.create_cluster(clusterName = cluster_name, capacityProviders = ["FARGATE", "FARGATE_SPOT"])
-
-#     print("Successfully created the ECS Fargate cluster.")
-#     print("Next, registering a task definition to use as the Fargate Redis nodes...")
-
-#     ecs_client.register_task_definition(
-#         family = 'Wukong',
-#         executionRoleArn = 'arn:aws:iam::833201972695:role/ecsTaskExecutionRole',
-#         networkMode = 'awsvpc',
-#         containerDefinitions = [
-#             {
-#                 "logConfiguration": {
-#                     "logDriver": "awslogs",
-#                     "options": {
-#                     "awslogs-group": "/ecs/WukongRedisNode",
-#                     "awslogs-region": "us-east-1",
-#                     "awslogs-stream-prefix": "ecs"
-#                     }
-#                 },
-#                 "portMappings": [
-#                     {
-#                     "hostPort": 6379,
-#                     "protocol": "tcp",
-#                     "containerPort": 6379
-#                     }
-#                 ],
-#                 "cpu": 0,
-#                 "environment": [],
-#                 "mountPoints": [],
-#                 "memoryReservation": 30000,
-#                 "volumesFrom": [],
-#                 "image": "redis",
-#                 "essential": True,
-#                 "name": "Redis"
-#             }
-#         ]
-#     )
-
-#     print("Successfully registered the task definition!")
-
 def get_ec2_client():
     global EC2_CLIENT 
     
