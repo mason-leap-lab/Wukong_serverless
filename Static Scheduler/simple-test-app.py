@@ -8,7 +8,13 @@ import socket
 hostname = socket.getfqdn()
 private_ipv4 = socket.gethostbyname_ex(hostname)[2][0]
 
-local_cluster = LocalCluster(host=private_ipv4, proxy_address=private_ipv4, num_lambda_invokers = 2, use_local_proxy = False, redis_endpoints = [(private_ipv4, 6379)], use_fargate = False)
+local_cluster = LocalCluster(
+    host=private_ipv4, 
+    proxy_address=private_ipv4, 
+    num_lambda_invokers = 2, 
+    use_local_proxy = False, 
+    redis_endpoints = [(private_ipv4, 6379)], 
+    use_fargate = False)
 client = Client(local_cluster)
 
 def incr(x):
